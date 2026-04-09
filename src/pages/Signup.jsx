@@ -39,7 +39,6 @@ function Field({ label, type = 'text', value, onChange, placeholder, autoComplet
                     boxShadow: focused ? '0 0 0 3px rgba(99,102,241,0.10)' : 'none',
                     fontFamily: 'inherit',
                 }}
-                placeholder={placeholder}
             />
             {error && (
                 <span style={{ fontSize: 11, color: '#f87171', marginTop: 1 }}>{error}</span>

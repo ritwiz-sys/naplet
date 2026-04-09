@@ -69,7 +69,6 @@ function SendIcon({ active }) {
 function AIWelcomeCard({ firstName, habits = [], moods = [], todos = [], weather = null }) {
     const [query,   setQuery]   = useState('');
     const [loading, setLoading] = useState(false);
-    const [error,   setError]   = useState('');
     const inputRef              = useRef(null);
     const responseRef           = useRef(null);
 
@@ -87,7 +86,6 @@ function AIWelcomeCard({ firstName, habits = [], moods = [], todos = [], weather
         if (!trimmed || loading) return;
 
         setLoading(true);
-        setError('');
 
         try {
             const res = await fetch('/api/ask-ai', {
@@ -110,7 +108,6 @@ User: ${trimmed}`,
             stream(data.response || 'No response received.');
         } catch (e) {
             stream('Sorry, something went wrong. Please try again.');
-            setError(true);
         } finally {
             setLoading(false);
             setQuery('');
