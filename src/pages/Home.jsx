@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useClerk, useAuth } from '@clerk/react';
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
 import ScrollVelocity from './ScrollVelocity';
-import Lenis from '@studio-freight/lenis';
+import Lenis from 'lenis';
 import ScrollReveal from './ScrollTrigger';
 import { useEffect, useRef, useState, useCallback } from 'react';
 
