@@ -17,18 +17,22 @@ app.post('/api/ask-ai', async (req, res) => {
     const { prompt } = req.body
     
     try {
-        const aiRes = await fetch('https://naplet.onrender.com/api/ask-ai', {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
             },
-            body: JSON.stringify({ prompt })
-        });
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [{ role: 'user', content: prompt }]
+            })
+        })
         
-        const data = await aiRes.json();
-        return res.json(data);
+        const data = await groqRes.json()
+        return res.json({ response: data.choices[0].message.content })
     } catch (err) {
-        return res.status(500).json({ error: 'Failed to fetch from AI service' });
+        return res.status(500).json({ error: err.message })
     }
 })
 
