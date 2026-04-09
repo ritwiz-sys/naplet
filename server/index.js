@@ -45,7 +45,6 @@ app.get('/api/weather', async (req, res) => {
     }
 
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=${encodeURIComponent(units)}&appid=${process.env.WEATHER_API_KEY}`;
-
     try {
         const weatherResponse = await fetch(url);
         const data = await weatherResponse.json();
