@@ -90,7 +90,7 @@ function AIWelcomeCard({ firstName, habits = [], moods = [], todos = [], weather
         setError('');
 
         try {
-            const res = await fetch('http://localhost:8080/api/ask-ai', {
+            const res = await fetch('/api/ask-ai', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
