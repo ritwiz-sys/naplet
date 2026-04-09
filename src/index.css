@@ -15,6 +15,11 @@ body {
     overflow: hidden;
 }
 
+/* Allow body scroll on mobile so position:fixed bottom nav works on iOS */
+@media (max-width: 767px) {
+    body { overflow: auto; }
+}
+
 :root {
     --font-logo: 'Syne', sans-serif;
     --font-body: 'Manrope', sans-serif;
@@ -66,16 +71,59 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         grid-template-columns: minmax(0, 190px) minmax(0, 1fr) minmax(0, 240px) !important;
     }
 }
+
+/* Tablet: 2-column, auto-height rows */
 @media (max-width: 900px) {
     .dash-grid {
-        grid-template-columns: 1fr 1fr !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
         grid-template-rows: auto !important;
-        overflow-y: auto !important;
+        height: auto !important;
+        min-height: unset !important;
+    }
+    .dash-col {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    /* Widgets that use flex-1 need explicit heights on tablet */
+    .dash-weather-card {
+        flex: 0 0 220px !important;
+        height: 220px !important;
+    }
+    .dash-ai-card {
+        flex: 0 0 360px !important;
+        min-height: 360px !important;
+    }
+    .dash-calendar-card {
+        flex: 0 0 520px !important;
+        min-height: 520px !important;
     }
 }
+
+/* Mobile: single column, scrollable */
 @media (max-width: 640px) {
     .dash-grid {
         grid-template-columns: 1fr !important;
+        grid-template-rows: auto !important;
+        height: auto !important;
+        min-height: unset !important;
+    }
+    .dash-weather-card {
+        flex: 0 0 200px !important;
+        height: 200px !important;
+    }
+    .dash-ai-card {
+        flex: 0 0 320px !important;
+        min-height: 320px !important;
+    }
+    .dash-calendar-card {
+        flex: 0 0 500px !important;
+        min-height: 500px !important;
+    }
+    /* Disable hover lift on touch screens */
+    .naplet-card:hover,
+    .card-lift:hover {
+        transform: none !important;
+        box-shadow: none !important;
     }
 }
 

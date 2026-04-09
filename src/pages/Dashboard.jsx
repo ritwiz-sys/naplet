@@ -19,10 +19,10 @@ import AIWelcomeCard from '../features/AIWelcomecard';
 // ── Full-page skeleton shown while Clerk resolves the user ─────────
 function DashboardSkeleton() {
     return (
-        <div className="flex h-screen w-screen overflow-hidden dashboard-bg">
+        <div className="flex h-dvh w-screen overflow-hidden dashboard-bg">
 
-            {/* Sidebar skeleton */}
-            <div className="relative z-10 flex flex-col items-center py-5 gap-3 flex-shrink-0"
+            {/* Sidebar skeleton - hidden on mobile */}
+            <div className="hidden md:flex relative z-10 flex-col items-center py-5 gap-3 flex-shrink-0"
                 style={{ width: 56, background: 'rgba(6,10,28,0.70)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
                 {[...Array(5)].map((_, i) => (
                     <div key={i} className="skeleton rounded-xl" style={{ width: 36, height: 36 }} />
@@ -30,7 +30,7 @@ function DashboardSkeleton() {
                 <div className="mt-auto skeleton rounded-full" style={{ width: 36, height: 36 }} />
             </div>
 
-            <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
+            <div className="relative z-10 flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
                 {/* Top bar skeleton */}
                 <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
                     <div className="flex items-center gap-2.5">
@@ -244,7 +244,7 @@ function Dashboard() {
     });
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden dashboard-bg">
+        <div className="flex h-dvh w-screen overflow-hidden dashboard-bg">
 
             {/* ── Beams background ── */}
             <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
@@ -264,10 +264,10 @@ function Dashboard() {
             <Sidebar activePage={activePage} onNav={setActivePage} />
 
             {/* Main */}
-            <div className="relative z-10 flex-1 flex flex-col overflow-hidden min-w-0">
+            <div className="relative z-10 flex-1 flex flex-col overflow-hidden min-w-0 pb-16 md:pb-0">
 
                 {/* ── Top bar ── */}
-                <header className="flex items-center justify-between px-5 py-3 flex-shrink-0">
+                <header className="flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3 flex-shrink-0">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
                             style={{ background: 'linear-gradient(135deg, #4f46e5, #6d28d9)' }}>
@@ -325,15 +325,15 @@ function Dashboard() {
 
                 {/* ── Home: greeting + widget grid ── */}
                 {activePage === 'home' && <>
-                <div className="text-center py-1.5 flex-shrink-0">
-                    <h1 className="text-white font-bold tracking-tight text-2xl md:text-3xl lg:text-4xl"
+                <div className="text-center py-1 sm:py-1.5 flex-shrink-0">
+                    <h1 className="text-white font-bold tracking-tight text-xl sm:text-2xl md:text-3xl lg:text-4xl"
                         style={{ fontFamily: 'var(--font-logo)' }}>
-                        {greeting}, {displayName} !
+                        {greeting}, {displayName}!
                     </h1>
-                    <p className="text-white/35 text-xs mt-1 font-medium">{dayLabel}</p>
+                    <p className="text-white/35 text-xs mt-0.5 font-medium">{dayLabel}</p>
                 </div>
 
-                <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 min-h-0">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-4 pb-4 min-h-0">
                     <div className="dash-grid h-full grid gap-3"
                         style={{
                             gridTemplateColumns: 'minmax(0,200px) minmax(0,1fr) minmax(0,260px)',
@@ -342,7 +342,7 @@ function Dashboard() {
                         }}>
 
                         {/* ── LEFT COLUMN ── */}
-                        <div className="flex flex-col gap-3 min-h-0">
+                        <div className="flex flex-col gap-3 min-h-0 dash-col">
 
                             {/* Mood Tracker */}
                             <Card className="flex-shrink-0" style={{ padding: 0 }}>
@@ -361,22 +361,25 @@ function Dashboard() {
                             </Card>
 
                             {/* Weather */}
-                            <div className="card-lift flex-1 min-h-0">
+                            <div className="card-lift flex-1 min-h-0 dash-weather-card">
                                 <Weather />
                             </div>
                         </div>
 
                         {/* ── CENTER COLUMN ── */}
-                        <div className="flex flex-col gap-3 min-h-0">
+                        <div className="flex flex-col gap-3 min-h-0 dash-col">
 
                             {/* AI Welcome (unchanged) */}
-                           <AIWelcomeCard
-    firstName={displayName}
-    habits={habits}
-    moods={moods}
-    todos={todos}
-    weather={weather}
-/>
+                            {/* AI card – needs explicit height on mobile/tablet */}
+                            <div className="flex-1 min-h-0 dash-ai-card flex flex-col">
+                                <AIWelcomeCard
+                                    firstName={displayName}
+                                    habits={habits}
+                                    moods={moods}
+                                    todos={todos}
+                                    weather={weather}
+                                />
+                            </div>
 
                             {/* Journal */}
                             <Card style={{ height: 155, flexShrink: 0, padding: 0 }}>
@@ -385,10 +388,10 @@ function Dashboard() {
                         </div>
 
                         {/* ── RIGHT COLUMN ── */}
-                        <div className="flex flex-col gap-3 min-h-0">
+                        <div className="flex flex-col gap-3 min-h-0 dash-col">
 
                             {/* ── Unified Calendar + Tasks card ── */}
-                            <div className="naplet-card flex-1 min-h-0 flex flex-col relative"
+                            <div className="naplet-card flex-1 min-h-0 flex flex-col relative dash-calendar-card"
                                 style={{
                                     background: 'rgba(6,4,13,0.62)',
                                     backdropFilter: 'blur(14px)',
