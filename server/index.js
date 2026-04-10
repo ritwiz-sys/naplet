@@ -4,37 +4,50 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 
-
-
-
-dotenv.config({ path: path.join(__dirname, '.env') })
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 const app = express();
+const PORT = process.env.PORT || 8081;
 
 app.use(cors());
 app.use(express.json());
 app.post('/api/ask-ai', async (req, res) => {
-    const { prompt } = req.body
-    
+    const { prompt } = req.body || {};
+
+    if (!prompt) {
+        return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+        return res.status(500).json({ error: 'GROQ_API_KEY is missing in .env' });
+    }
+
     try {
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
             },
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
-                messages: [{ role: 'user', content: prompt }]
-            })
-        })
-        
-        const data = await groqRes.json()
-        return res.json({ response: data.choices[0].message.content })
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 1024,
+            }),
+        });
+
+        const data = await groqRes.json();
+        if (!groqRes.ok) {
+            return res.status(groqRes.status).json({
+                error: data.error?.message || `Groq returned ${groqRes.status}`,
+            });
+        }
+
+        return res.json({ response: data?.choices?.[0]?.message?.content || '' });
     } catch (err) {
-        return res.status(500).json({ error: err.message })
+        return res.status(500).json({ error: err.message || 'Internal server error' });
     }
-})
+});
 
 
 
@@ -65,6 +78,6 @@ app.get('/api/weather', async (req, res) => {
     }
 });
 
-app.listen(8080, () => {
-    console.log('Server is running on port 8080');
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

@@ -107,7 +107,7 @@ User: ${trimmed}`,
             if (!res.ok) throw new Error(data.error || 'Failed');
             stream(data.response || 'No response received.');
         } catch (e) {
-            stream('Sorry, something went wrong. Please try again.');
+            stream(e?.message || 'Sorry, something went wrong. Please try again.');
         } finally {
             setLoading(false);
             setQuery('');

@@ -2,6 +2,7 @@
   "name": "naplet",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:8081",
   "engines": {
     "node": "20.x"
   },
@@ -35,6 +36,7 @@
   "scripts": {
     "start": "react-scripts start",
     "server": "node server/index.js",
+    "dev": "node scripts/dev.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
