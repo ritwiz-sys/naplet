@@ -1,70 +1,203 @@
-# Getting Started with Create React App
+# 🚀 NAPLET
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> Your AI-powered personal productivity dashboard — habits, moods, journal, todos, weather, and an AI life coach, all in one dark space-themed app.
 
-## Available Scripts
+**Live Demo:** https://melodic-elf-70fb44.netlify.app/
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## ✨ Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| Feature | Description |
+|---|---|
+| 🤖 AI Assistant | Ask your personal AI coach anything about your day, habits, or goals |
+| ✅ Habit Tracker | Track daily habits with streak calculation and completion history |
+| 📓 Journal | Auto-saving journal with mood integration |
+| ☑️ Todo List | Full CRUD task management |
+| 😊 Mood Tracker | Log your daily mood with emoji selection |
+| 🌤️ Weather Card | Real-time weather based on your location |
+| 📅 Calendar | View and manage custom events |
+| 🌌 Space Theme | Beautiful dark UI with animated orbs and glowing accents |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🛠️ Tech Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+**Frontend**
+- React 18
+- Tailwind CSS
+- Clerk (Authentication)
+- Firebase Firestore (Database)
 
-### `npm run build`
+**Backend**
+- Node.js + Express
+- Groq API (LLaMA 3.3 70B)
+- OpenWeatherMap API
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+**Deployment**
+- Frontend → Netlify
+- Backend → Render
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 📁 Project Structure
 
-### `npm run eject`
+```
+naplet/
+├── public/
+│   └── _redirects          # Netlify routing fix
+├── src/
+│   ├── components/
+│   │   └── Sidebar.jsx
+│   ├── features/
+│   │   ├── AIWelcomecard.jsx
+│   │   ├── habits/
+│   │   │   └── habit-tracker.jsx
+│   │   ├── moods/
+│   │   │   └── moodtracker.jsx
+│   │   ├── notes/
+│   │   │   └── notes-widget.jsx
+│   │   ├── todos/
+│   │   │   └── todolist.jsx
+│   │   ├── weather/
+│   │   │   └── weather.jsx
+│   │   └── calendar/
+│   │       └── calendar.jsx
+│   ├── firebase/
+│   │   └── firebase.js
+│   ├── pages/
+│   │   └── Dashboard.jsx
+│   └── App.js
+└── server/
+    ├── index.js             # Express server
+    └── .env                 # Server environment variables
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## ⚙️ Getting Started
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Prerequisites
+- Node.js 18+
+- Firebase project
+- Clerk account
+- Groq API key
+- OpenWeatherMap API key
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 1. Clone the repo
+```bash
+git clone https://github.com/ritwiz-sys/naplet.git
+cd naplet
+```
 
-## Learn More
+### 2. Install frontend dependencies
+```bash
+npm install
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 3. Install backend dependencies
+```bash
+cd server
+npm install
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 4. Set up environment variables
 
-### Code Splitting
+Create `.env` in the root folder:
+```env
+REACT_APP_CLERK_PUBLISHABLE_KEY=your_clerk_key
+REACT_APP_FIREBASE_API_KEY=your_firebase_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_domain
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_bucket
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Create `server/.env`:
+```env
+GROQ_API_KEY=your_groq_key
+WEATHER_API_KEY=your_openweathermap_key
+```
 
-### Analyzing the Bundle Size
+### 5. Run the app
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Start the Express server:
+```bash
+cd server
+node index.js
+```
 
-### Making a Progressive Web App
+Start the React app:
+```bash
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## 🗄️ Firestore Data Structure
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```
+users/{userId}/
+├── habits/{habitId}
+│   ├── text: string
+│   ├── createdAt: timestamp
+│   └── completedDates: { "2026-04-01": true }
+│
+├── journal/{entryId}
+│   ├── title: string
+│   ├── content: string
+│   ├── todayMood: string
+│   └── createdAt: timestamp
+│
+└── events/{eventId}
+    ├── title: string
+    ├── date: string
+    └── createdAt: timestamp
 
-### Deployment
+moods/{moodId}                 ← top-level collection
+├── mood: string
+├── emoji: string
+├── userId: string
+└── timestamp: timestamp
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+---
 
-### `npm run build` fails to minify
+## 🚀 Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Backend → Render
+1. Create a new Web Service on [render.com](https://render.com)
+2. Connect your GitHub repo
+3. Set Root Directory to `server`
+4. Add environment variables: `GROQ_API_KEY`, `WEATHER_API_KEY`
+5. Deploy!
+
+### Frontend → Netlify
+1. Import your GitHub repo on [netlify.com](https://netlify.com)
+2. Build command: `npm run build`
+3. Publish directory: `build`
+4. Add all `REACT_APP_` environment variables
+5. Deploy!
+
+---
+
+## 🔑 Key Design Decisions
+
+- **Subcollections** for user data (habits, journal, events) — scoped to user, no `where` queries needed
+- **`completedDates` object** instead of boolean for habits — enables streak calculation and history
+- **Streak calculated client-side** from `completedDates` — single source of truth, never stale
+- **Debounced autosave** in journal — prevents excessive Firestore writes
+- **Express as API proxy** — keeps API keys server-side, never exposed to browser
+
+---
+
+## 👨‍💻 Built By
+
+**Ritwiz** — Built from scratch with React, Firebase, and a lot of debugging 🚀
+
+---
+
+## 📄 License
+
+MIT License — feel free to use and modify!
