@@ -88,7 +88,7 @@ function AIWelcomeCard({ firstName, habits = [], moods = [], todos = [], weather
         setLoading(true);
 
         try {
-            const res = await fetch('/api/ask-ai', {
+            const res = await fetch('https://naplet.onrender.com/api/ask-ai', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
