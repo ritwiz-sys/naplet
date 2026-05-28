@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/react';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import App from './App';
 import './index.css';
+import { SettingsProvider } from './context/settingsContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 const publishableKey = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
@@ -46,9 +47,11 @@ function ClerkProviderWithRouter({ children }) {
 root.render(
     <>
         <BrowserRouter>
-            <ClerkProviderWithRouter>
-                <App />
-            </ClerkProviderWithRouter>
+            <SettingsProvider>
+                <ClerkProviderWithRouter>
+                    <App />
+                </ClerkProviderWithRouter>
+            </SettingsProvider>
         </BrowserRouter>
     </>
 );

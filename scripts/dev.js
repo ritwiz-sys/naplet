@@ -8,6 +8,7 @@ function run(name, script) {
   const child = spawn(npmCommand(), ['run', script], {
     stdio: 'inherit',
     env: process.env,
+    shell: true,
   });
 
   child.on('exit', (code) => {

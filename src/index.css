@@ -310,3 +310,27 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(0.3);
     cursor: pointer;
 }
+
+/* ── Compact mode ────────────────────────────────────────── */
+#root.naplet-compact .dash-grid {
+    gap: 8px !important;
+}
+#root.naplet-compact .dash-col {
+    gap: 8px !important;
+}
+#root.naplet-compact .naplet-card,
+#root.naplet-compact .glass {
+    border-radius: 14px !important;
+}
+
+/* ── Pulse for sounds indicator ──────────────────────────── */
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50%       { opacity: 1;   }
+}
+
+/* ── Journal page textarea placeholder ───────────────────── */
+textarea::placeholder {
+    color: rgba(255, 255, 255, 0.18);
+    line-height: 1.8;
+}

@@ -8,6 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 8081;
+const buildPath = path.resolve(__dirname, '..', 'build');
 
 app.use(cors());
 app.use(express.json());
@@ -76,6 +77,12 @@ app.get('/api/weather', async (req, res) => {
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
+});
+
+app.use(express.static(buildPath));
+
+app.get(/^\/(?!api\/).*/, (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 app.listen(PORT, () => {

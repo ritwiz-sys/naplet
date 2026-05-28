@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Moods (top-level, userId field used for filtering) ──
+    match /moods/{docId} {
+      allow read, write: if true;
+    }
+
+    // ── Per-user sub-collections ──
+    // Since the app uses Clerk (not Firebase Auth) for identity,
+    // access is controlled at the application layer via Clerk sessions.
+    match /users/{userId}/{collection}/{docId} {
+      allow read, write: if true;
+    }
+
+    // Catch-all for any other collections
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
