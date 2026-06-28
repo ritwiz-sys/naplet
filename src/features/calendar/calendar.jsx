@@ -20,6 +20,47 @@ const formatShort = (dateKey) => {
     });
 };
 
+// ── Week-view helpers ──────────────────────────────────────────────
+const DAY_START_HOUR = 6;   // 6 AM
+const DAY_END_HOUR   = 23;  // 11 PM (inclusive)
+const HOUR_PX         = 52; // height of one hour row
+
+const parseDateKey = (dateKey) => {
+    const [y, m, d] = dateKey.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
+const addDays = (date, n) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + n);
+    return d;
+};
+
+const dateToKey = (d) => toDateKey(d.getFullYear(), d.getMonth(), d.getDate());
+
+// Returns array of 7 dateKeys (Sun → Sat) for the week containing dateKey
+const getWeekDates = (dateKey) => {
+    const d        = parseDateKey(dateKey);
+    const sunday   = addDays(d, -d.getDay());
+    return Array.from({ length: 7 }, (_, i) => dateToKey(addDays(sunday, i)));
+};
+
+const formatWeekRange = (weekDates) => {
+    const start = parseDateKey(weekDates[0]);
+    const end   = parseDateKey(weekDates[6]);
+    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endStr   = end.toLocaleDateString('en-US', {
+        month: start.getMonth() === end.getMonth() ? undefined : 'short', day: 'numeric',
+    });
+    return `${startStr} – ${endStr}`;
+};
+
+const timeToMinutes = (time) => {
+    if (!time) return null;
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + (m || 0);
+};
+
 // ── Icons ──────────────────────────────────────────────────────────
 const ChevLeft = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-4 h-4">
@@ -349,6 +390,153 @@ function FullEventPanel({ selectedDate, todayKey, selectedEvents, showAddForm, s
     );
 }
 
+// ── WeekView – Google-Calendar-style time grid ─────────────────────
+const WEEK_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function WeekView({
+    weekDates, todayKey, selectedDate, setSelectedDate, eventsForDate,
+    onSlotClick, onDeleteEvent, nowMinutes,
+}) {
+    const hours = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR + 1 }, (_, i) => DAY_START_HOUR + i);
+    const gridHeight = hours.length * HOUR_PX;
+
+    const formatHourLabel = (h) => {
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        return `${h12} ${period}`;
+    };
+
+    const nowTopPx = (nowMinutes / 60 - DAY_START_HOUR) * HOUR_PX;
+    const nowVisible = nowMinutes >= DAY_START_HOUR * 60 && nowMinutes <= (DAY_END_HOUR + 1) * 60;
+
+    return (
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {/* Day headers */}
+            <div className="flex-shrink-0 flex border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ width: 52 }} className="flex-shrink-0" />
+                {weekDates.map((dk, i) => {
+                    const isToday    = dk === todayKey;
+                    const isSelected = dk === selectedDate;
+                    const d = parseDateKey(dk);
+                    return (
+                        <button key={dk}
+                            onClick={() => setSelectedDate(dk)}
+                            className="flex-1 flex flex-col items-center gap-1 py-2.5 transition-all"
+                            style={{
+                                background: isSelected ? 'rgba(99,102,241,0.08)' : 'transparent',
+                                borderLeft: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                            }}
+                        >
+                            <span className="font-bold tracking-wide" style={{ fontSize: 9, color: isToday ? '#a78bfa' : 'rgba(255,255,255,0.3)' }}>
+                                {WEEK_DAY_LABELS[i]}
+                            </span>
+                            <span className="w-6 h-6 flex items-center justify-center rounded-full font-bold"
+                                style={{
+                                    fontSize: 12,
+                                    color: isToday ? '#fff' : 'rgba(255,255,255,0.65)',
+                                    background: isToday ? 'linear-gradient(135deg, #6366f1, #7c3aed)' : 'transparent',
+                                    boxShadow: isToday ? '0 0 10px rgba(99,102,241,0.6)' : 'none',
+                                }}>
+                                {d.getDate()}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Scrollable time grid */}
+            <div className="flex-1 overflow-y-auto min-h-0" style={{ scrollbarWidth: 'thin' }}>
+                <div className="flex relative" style={{ height: gridHeight }}>
+                    {/* Hour labels column */}
+                    <div className="flex-shrink-0 relative" style={{ width: 52 }}>
+                        {hours.map(h => (
+                            <div key={h} className="absolute right-1.5 text-right"
+                                style={{ top: (h - DAY_START_HOUR) * HOUR_PX - 6, fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>
+                                {formatHourLabel(h)}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Day columns */}
+                    {weekDates.map((dk, dayIdx) => {
+                        const isToday   = dk === todayKey;
+                        const dayEvents = eventsForDate(dk);
+                        const timedEvents   = dayEvents.filter(e => e.time);
+                        const allDayEvents  = dayEvents.filter(e => !e.time);
+
+                        return (
+                            <div key={dk} className="flex-1 relative"
+                                style={{
+                                    borderLeft: '1px solid rgba(255,255,255,0.05)',
+                                    background: isToday ? 'rgba(99,102,241,0.04)' : 'transparent',
+                                }}
+                            >
+                                {/* All-day chips, stacked at top inside the column */}
+                                {allDayEvents.length > 0 && (
+                                    <div className="absolute left-0.5 right-0.5 top-0.5 flex flex-col gap-0.5 z-10">
+                                        {allDayEvents.slice(0, 2).map(ev => (
+                                            <div key={ev.id}
+                                                onClick={(e) => { e.stopPropagation(); onDeleteEvent(ev.id); }}
+                                                title={`${ev.title} (click to remove)`}
+                                                className="truncate rounded px-1 cursor-pointer"
+                                                style={{ fontSize: 8.5, lineHeight: '14px', background: `${ev.color}33`, color: ev.color, border: `1px solid ${ev.color}55` }}>
+                                                {ev.title}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Hour slot click targets */}
+                                {hours.map(h => (
+                                    <div key={h}
+                                        onClick={() => onSlotClick(dk, h)}
+                                        className="absolute left-0 right-0 cursor-pointer hover:bg-white/[0.03] transition-colors"
+                                        style={{ top: (h - DAY_START_HOUR) * HOUR_PX, height: HOUR_PX, borderTop: '1px solid rgba(255,255,255,0.035)' }}
+                                    />
+                                ))}
+
+                                {/* Timed event blocks */}
+                                {timedEvents.map(ev => {
+                                    const mins = timeToMinutes(ev.time);
+                                    if (mins === null) return null;
+                                    const top = (mins / 60 - DAY_START_HOUR) * HOUR_PX;
+                                    if (top < -HOUR_PX || top > gridHeight) return null;
+                                    return (
+                                        <div key={ev.id}
+                                            onClick={(e) => { e.stopPropagation(); onDeleteEvent(ev.id); }}
+                                            title={`${ev.title} · ${ev.time} (click to remove)`}
+                                            className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-0.5 overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] z-10"
+                                            style={{
+                                                top: Math.max(0, top), height: Math.min(HOUR_PX - 4, gridHeight - top),
+                                                minHeight: 20,
+                                                background: `linear-gradient(135deg, ${ev.color}40, ${ev.color}1f)`,
+                                                borderLeft: `2.5px solid ${ev.color}`,
+                                                boxShadow: `0 0 8px ${ev.color}30`,
+                                            }}>
+                                            <p className="text-white font-semibold truncate" style={{ fontSize: 10 }}>{ev.title}</p>
+                                            <p className="truncate" style={{ fontSize: 8, color: ev.color, opacity: 0.85 }}>{ev.time}</p>
+                                        </div>
+                                    );
+                                })}
+
+                                {/* Current-time indicator line */}
+                                {isToday && nowVisible && (
+                                    <div className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                                        style={{ top: nowTopPx }}>
+                                        <div className="rounded-full flex-shrink-0"
+                                            style={{ width: 7, height: 7, marginLeft: -3.5, background: '#f43f5e', boxShadow: '0 0 6px #f43f5e' }} />
+                                        <div className="flex-1" style={{ height: 1.5, background: '#f43f5e', boxShadow: '0 0 4px #f43f5e' }} />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── Main Component ─────────────────────────────────────────────────
 const Calendar = ({ embedded = false }) => {
     const { user } = useUser();
@@ -367,6 +555,17 @@ const Calendar = ({ embedded = false }) => {
     const [eventsLoading, setEventsLoading] = useState(true);
     const inputRef = useRef(null);
 
+    // ── Week-view slot popup state ──
+    const [weekSlot, setWeekSlot]       = useState(null); // { date, hour } | null
+    const [weekTitle, setWeekTitle]     = useState('');
+    const [weekColor, setWeekColor]     = useState(EVENT_COLORS[0]);
+    const [weekSaving, setWeekSaving]   = useState(false);
+    const [nowMinutes, setNowMinutes]   = useState(() => {
+        const n = new Date();
+        return n.getHours() * 60 + n.getMinutes();
+    });
+    const weekInputRef = useRef(null);
+
     useEffect(() => {
         if (!user) return;
         loadEvents(user.id).then(ev => { setEvents(ev); setEventsLoading(false); });
@@ -375,6 +574,19 @@ const Calendar = ({ embedded = false }) => {
     useEffect(() => {
         if (showAddForm && inputRef.current) inputRef.current.focus();
     }, [showAddForm]);
+
+    useEffect(() => {
+        if (weekSlot && weekInputRef.current) weekInputRef.current.focus();
+    }, [weekSlot]);
+
+    // Live "current time" ticker for the red indicator line
+    useEffect(() => {
+        const id = setInterval(() => {
+            const n = new Date();
+            setNowMinutes(n.getHours() * 60 + n.getMinutes());
+        }, 60 * 1000);
+        return () => clearInterval(id);
+    }, []);
 
     const prevMonth = () => {
         if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
@@ -405,10 +617,26 @@ const Calendar = ({ embedded = false }) => {
         setEvents(prev => prev.filter(e => e.id !== id));
     };
 
+    const handleSlotClick = (date, hour) => {
+        setWeekSlot({ date, hour });
+        setWeekTitle('');
+        setWeekColor(EVENT_COLORS[0]);
+    };
+
+    const handleAddWeekEvent = async () => {
+        if (!weekTitle.trim() || !user || !weekSlot) return;
+        setWeekSaving(true);
+        const time = `${String(weekSlot.hour).padStart(2, '0')}:00`;
+        const ev = await addEvent(user.id, { title: weekTitle.trim(), date: weekSlot.date, color: weekColor, time });
+        setEvents(prev => [...prev, ev]);
+        setWeekTitle(''); setWeekSaving(false); setWeekSlot(null);
+    };
+
     if (eventsLoading) return <CalendarSkeleton />;
 
     const eventsForDate  = (dk) => events.filter(e => e.date === dk);
     const selectedEvents = eventsForDate(selectedDate);
+    const weekDates      = getWeekDates(selectedDate);
 
     const sharedProps = {
         selectedDate, todayKey, selectedEvents, showAddForm, setShowAddForm,
@@ -502,62 +730,161 @@ const Calendar = ({ embedded = false }) => {
     }
 
     // ── STANDALONE MODE ────────────────────────────────────────────
+    // Two-column layout: narrow month calendar + quick list on the left,
+    // a Google-Calendar-style weekly time grid on the right.
     return (
-        <div className="h-full flex flex-col overflow-hidden select-none"
+        <div className="h-full w-full flex overflow-hidden select-none relative"
             style={{
                 background: 'linear-gradient(180deg, #08080f 0%, #0b0b18 100%)',
                 borderRadius: 20,
                 border: '1px solid rgba(255,255,255,0.05)',
             }}
         >
-            {/* Brand stripe */}
-            <div className="flex-shrink-0 h-0.5"
-                style={{ background: 'linear-gradient(90deg, transparent, #4f46e5, #7c3aed, transparent)' }} />
+            {/* ── LEFT: month calendar + quick list ── */}
+            <div className="flex flex-col flex-shrink-0 h-full overflow-hidden"
+                style={{ width: 300, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
 
-            {/* Month nav */}
-            <div className="flex-shrink-0 flex items-center justify-between px-5 pt-4 pb-2">
-                <button onClick={prevMonth}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all text-white/25 hover:text-white/70 hover:bg-white/6">
-                    <ChevLeft />
-                </button>
-                <div className="flex flex-col items-center leading-none gap-0.5">
-                    <span className="text-white font-bold"
-                        style={{ fontFamily: 'var(--font-logo)', fontSize: 18, letterSpacing: '-0.01em' }}>
-                        {MONTHS[viewMonth]}
-                    </span>
-                    <span className="text-white/25 font-semibold"
-                        style={{ fontSize: 10, letterSpacing: '0.12em' }}>
-                        {viewYear}
-                    </span>
-                </div>
-                <button onClick={nextMonth}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all text-white/25 hover:text-white/70 hover:bg-white/6">
-                    <ChevRight />
-                </button>
-            </div>
+                {/* Brand stripe */}
+                <div className="flex-shrink-0 h-0.5"
+                    style={{ background: 'linear-gradient(90deg, transparent, #4f46e5, #7c3aed, transparent)' }} />
 
-            {/* Day labels */}
-            <div className="flex-shrink-0 grid grid-cols-7 px-3 pb-1">
-                {DAYS.map(d => (
-                    <div key={d} className="text-center"
-                        style={{ fontSize: 8, color: 'rgba(255,255,255,0.18)', fontWeight: 700, letterSpacing: '0.06em' }}>
-                        {d}
+                {/* Month nav */}
+                <div className="flex-shrink-0 flex items-center justify-between px-5 pt-4 pb-2">
+                    <button onClick={prevMonth}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center transition-all text-white/25 hover:text-white/70 hover:bg-white/6">
+                        <ChevLeft />
+                    </button>
+                    <div className="flex flex-col items-center leading-none gap-0.5">
+                        <span className="text-white font-bold"
+                            style={{ fontFamily: 'var(--font-logo)', fontSize: 18, letterSpacing: '-0.01em' }}>
+                            {MONTHS[viewMonth]}
+                        </span>
+                        <span className="text-white/25 font-semibold"
+                            style={{ fontSize: 10, letterSpacing: '0.12em' }}>
+                            {viewYear}
+                        </span>
                     </div>
-                ))}
+                    <button onClick={nextMonth}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center transition-all text-white/25 hover:text-white/70 hover:bg-white/6">
+                        <ChevRight />
+                    </button>
+                </div>
+
+                {/* Day labels */}
+                <div className="flex-shrink-0 grid grid-cols-7 px-3 pb-1">
+                    {DAYS.map(d => (
+                        <div key={d} className="text-center"
+                            style={{ fontSize: 8, color: 'rgba(255,255,255,0.18)', fontWeight: 700, letterSpacing: '0.06em' }}>
+                            {d}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Grid */}
+                <CalendarGrid {...gridProps} />
+
+                {/* Divider */}
+                <div className="flex-shrink-0 mx-5 my-2 relative">
+                    <div className="h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
+                    <div className="absolute left-0 top-0 h-px w-8"
+                        style={{ background: 'linear-gradient(90deg, #6366f1, transparent)' }} />
+                </div>
+
+                {/* Full event panel (quick list for the selected day) */}
+                <FullEventPanel {...sharedProps} events={events} />
             </div>
 
-            {/* Grid */}
-            <CalendarGrid {...gridProps} />
+            {/* ── RIGHT: weekly time-grid view ── */}
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 relative">
 
-            {/* Divider */}
-            <div className="flex-shrink-0 mx-5 my-2 relative">
-                <div className="h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
-                <div className="absolute left-0 top-0 h-px w-8"
-                    style={{ background: 'linear-gradient(90deg, #6366f1, transparent)' }} />
+                {/* Week header bar */}
+                <div className="flex-shrink-0 flex items-center justify-between px-5 py-3"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="flex items-center gap-2">
+                        <div className="w-1 h-3.5 rounded-full"
+                            style={{ background: 'linear-gradient(180deg, #6366f1, #7c3aed)' }} />
+                        <span className="text-white/80 font-bold" style={{ fontSize: 13, fontFamily: 'var(--font-logo)' }}>
+                            {formatWeekRange(weekDates)}
+                        </span>
+                    </div>
+                    <button onClick={() => setSelectedDate(todayKey)}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wide transition-all"
+                        style={{
+                            background: 'rgba(99,102,241,0.12)', color: '#a78bfa',
+                            border: '1px solid rgba(99,102,241,0.25)',
+                        }}>
+                        Today
+                    </button>
+                </div>
+
+                <WeekView
+                    weekDates={weekDates}
+                    todayKey={todayKey}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    eventsForDate={eventsForDate}
+                    onSlotClick={handleSlotClick}
+                    onDeleteEvent={handleDeleteEvent}
+                    nowMinutes={nowMinutes}
+                />
             </div>
 
-            {/* Full event panel */}
-            <FullEventPanel {...sharedProps} events={events} />
+            {/* ── Slot-click "add event" popup ── */}
+            {weekSlot && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center"
+                    style={{ background: 'rgba(3,3,8,0.55)' }}
+                    onClick={() => setWeekSlot(null)}
+                >
+                    <div onClick={(e) => e.stopPropagation()}
+                        className="flex flex-col gap-3 rounded-2xl p-4"
+                        style={{
+                            width: 280,
+                            background: 'linear-gradient(180deg, #100f1c, #0a0a14)',
+                            border: '1px solid rgba(99,102,241,0.25)',
+                            boxShadow: '0 0 40px rgba(99,102,241,0.18), 0 12px 32px rgba(0,0,0,0.6)',
+                        }}>
+                        <div className="flex items-center justify-between">
+                            <span className="text-white/80 font-bold" style={{ fontSize: 12 }}>
+                                New event · {formatShort(weekSlot.date)} at {(() => {
+                                    const h = weekSlot.hour;
+                                    const period = h >= 12 ? 'PM' : 'AM';
+                                    const h12 = h % 12 === 0 ? 12 : h % 12;
+                                    return `${h12}:00 ${period}`;
+                                })()}
+                            </span>
+                            <button onClick={() => setWeekSlot(null)} className="text-white/30 hover:text-white/70 transition-all">
+                                <CloseIcon />
+                            </button>
+                        </div>
+
+                        <input ref={weekInputRef} type="text" value={weekTitle}
+                            onChange={e => setWeekTitle(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleAddWeekEvent()}
+                            placeholder="Event title..."
+                            className="w-full rounded-lg px-3 py-2 bg-transparent text-white placeholder-white/20 focus:outline-none"
+                            style={{ fontSize: 12, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }} />
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex gap-1.5 items-center">
+                                {EVENT_COLORS.map(c => (
+                                    <button key={c} onClick={() => setWeekColor(c)} className="rounded-full transition-all"
+                                        style={{
+                                            width: weekColor === c ? 14 : 11, height: weekColor === c ? 14 : 11,
+                                            backgroundColor: c,
+                                            boxShadow: weekColor === c ? `0 0 8px ${c}` : 'none',
+                                            opacity: weekColor === c ? 1 : 0.45,
+                                        }} />
+                                ))}
+                            </div>
+                            <button onClick={handleAddWeekEvent} disabled={weekSaving || !weekTitle.trim()}
+                                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-white transition-all disabled:opacity-30"
+                                style={{ background: 'linear-gradient(135deg, #4f46e5, #6d28d9)' }}>
+                                {weekSaving ? 'Saving…' : 'Add Event'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

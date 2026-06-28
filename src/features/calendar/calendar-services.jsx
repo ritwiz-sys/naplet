@@ -15,14 +15,15 @@ export const loadEvents = async (userId) => {
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
-export const addEvent = async (userId, { title, date, color }) => {
+export const addEvent = async (userId, { title, date, color, time }) => {
     const docRef = await addDoc(collection(db, 'users', userId, 'events'), {
         title,
         date,       // stored as 'YYYY-MM-DD' string
         color: color || '#6366f1',
+        time: time || null, // stored as 'HH:MM' string, or null for all-day
         createdAt: serverTimestamp(),
     });
-    return { id: docRef.id, title, date, color: color || '#6366f1' };
+    return { id: docRef.id, title, date, color: color || '#6366f1', time: time || null };
 };
 
 export const updateEvent = async (userId, eventId, updates) => {
