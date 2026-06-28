@@ -14,6 +14,7 @@ import GoalsPage from './GoalsPage';
 import AnalyticsPage from './AnalyticsPage';
 import SettingsPage from './SettingsPage';
 import JournalPage from './JournalPage';
+import ChatPage from './ChatPage';
 import AIWelcomeCard from '../features/AIWelcomecard';
 import { useSettings } from '../context/settingsContext';
 
@@ -211,6 +212,7 @@ function Dashboard() {
                         <div className="flex-1 flex overflow-hidden min-h-0">
                             {activePage === 'calendar'  && <Calendar embedded={false} />}
                             {activePage === 'journal'   && <JournalPage />}
+                            {activePage === 'chat'      && <ChatPage />}
                             {activePage === 'focus'     && <FocusPage />}
                             {activePage === 'goals'     && <GoalsPage />}
                             {activePage === 'analytics' && <AnalyticsPage />}
