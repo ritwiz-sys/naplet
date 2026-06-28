@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { WeatherSkeleton } from '../../components/Skeleton';
 
 // ── Fallback ──────────────────────────────────────────────────────
@@ -505,6 +505,81 @@ function WeatherIllustration({ type, accent }) {
     }
 }
 
+// ── City fallback input (shown when geolocation is denied) ────────
+function CityInputForm({ value, onChange, onSubmit, error, submitting }) {
+    return (
+        <div
+            className="w-full h-full flex flex-col items-center justify-center gap-3 relative weather-card-enter"
+            style={{
+                background: 'linear-gradient(160deg, #0c0822 0%, #13103a 55%, #1a1550 100%)',
+                borderRadius: 20,
+                border: '1px solid rgba(167,139,250,0.28)',
+                boxShadow: '0 0 0 1px rgba(0,0,0,0.3), 0 0 32px rgba(130,90,255,0.10), inset 0 1px 0 rgba(255,255,255,0.08)',
+                padding: '18px 16px',
+                minHeight: 0,
+            }}
+        >
+            {/* Ambient glow */}
+            <div className="absolute top-0 right-0 pointer-events-none"
+                style={{
+                    width: 130, height: 130,
+                    background: 'radial-gradient(circle at 70% 30%, rgba(167,139,250,0.45) 0%, transparent 65%)',
+                    borderRadius: '50%',
+                    animation: 'glow-breathe 4s ease-in-out infinite',
+                }} />
+
+            <span style={{ fontSize: 26, filter: 'drop-shadow(0 0 10px rgba(167,139,250,0.6))' }}>📍</span>
+
+            <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.50)', textAlign: 'center', lineHeight: 1.5, maxWidth: 200, position: 'relative', zIndex: 1 }}>
+                Location access denied.<br />Enter your city to see weather.
+            </p>
+
+            <form onSubmit={onSubmit} className="w-full flex items-center gap-1.5 relative" style={{ maxWidth: 220, zIndex: 1 }}>
+                <input
+                    value={value}
+                    onChange={onChange}
+                    placeholder="e.g. London"
+                    autoFocus
+                    style={{
+                        flex: 1,
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: 10,
+                        padding: '7px 10px',
+                        color: 'rgba(255,255,255,0.88)',
+                        fontSize: 12,
+                        outline: 'none',
+                        caretColor: '#a78bfa',
+                    }}
+                />
+                <button
+                    type="submit"
+                    disabled={!value.trim() || submitting}
+                    style={{
+                        background: value.trim() && !submitting
+                            ? 'linear-gradient(135deg, #6d28d9, #4f46e5)'
+                            : 'rgba(255,255,255,0.06)',
+                        border: 'none',
+                        borderRadius: 10,
+                        padding: '7px 13px',
+                        color: 'white',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: value.trim() && !submitting ? 'pointer' : 'default',
+                        boxShadow: value.trim() && !submitting ? '0 0 12px rgba(99,102,241,0.35)' : 'none',
+                        flexShrink: 0,
+                    }}>
+                    Go
+                </button>
+            </form>
+
+            {error && (
+                <p style={{ fontSize: 9.5, color: '#fca5a5', position: 'relative', zIndex: 1 }}>{error}</p>
+            )}
+        </div>
+    );
+}
+
 // ── Stat item ─────────────────────────────────────────────────────
 function StatItem({ icon, label, value, accent, statBg, compact }) {
     return (
@@ -520,30 +595,92 @@ function StatItem({ icon, label, value, accent, statBg, compact }) {
 
 // ── Main Component ────────────────────────────────────────────────
 function Weather() {
-    const [weather, setWeather] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError]     = useState('');
-    const containerRef          = useRef(null);
-    const size                  = useContainerSize(containerRef);
+    const [weather, setWeather]         = useState(null);
+    const [loading, setLoading]         = useState(true);
+    const [error, setError]             = useState('');
+    const [needsCityInput, setNeedsCityInput] = useState(false);
+    const [cityInput, setCityInput]     = useState('');
+    const [cityError, setCityError]     = useState('');
+    const [citySubmitting, setCitySubmitting] = useState(false);
+    const containerRef                  = useRef(null);
+    const size                          = useContainerSize(containerRef);
 
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            try {
-                const res  = await fetch('/api/weather?city=Amaravati&units=metric');
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed');
-                if (alive) setWeather(data);
-            } catch (e) {
-                if (alive) { setError(e.message); setWeather(FALLBACK); }
-            } finally {
-                if (alive) setLoading(false);
+    // ── Fetch weather by coords or city via the Express backend ──
+    const fetchWeather = useCallback(async (params) => {
+        const isCityLookup = !!params.city;
+        if (isCityLookup) setCitySubmitting(true);
+        else setLoading(true);
+
+        try {
+            const qs  = new URLSearchParams({ ...params, units: 'metric' }).toString();
+            const res = await fetch(`https://naplet.onrender.com/api/weather?${qs}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to fetch weather');
+
+            setWeather(data);
+            setNeedsCityInput(false);
+            setError('');
+            setCityError('');
+        } catch (e) {
+            if (isCityLookup) {
+                setCityError(e.message || 'City not found. Try again.');
+            } else {
+                setError(e.message || 'Failed to fetch weather');
+                setWeather(FALLBACK);
             }
-        })();
-        return () => { alive = false; };
+        } finally {
+            setLoading(false);
+            setCitySubmitting(false);
+        }
     }, []);
 
+    // ── On mount: ask for geolocation; fall back to manual city entry ──
+    useEffect(() => {
+        let alive = true;
+
+        if (!navigator.geolocation) {
+            setNeedsCityInput(true);
+            setLoading(false);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                if (!alive) return;
+                fetchWeather({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+            },
+            () => {
+                if (!alive) return;
+                setNeedsCityInput(true);
+                setLoading(false);
+            },
+            { timeout: 8000, maximumAge: 10 * 60 * 1000 }
+        );
+
+        return () => { alive = false; };
+    }, [fetchWeather]);
+
+    const handleCitySubmit = (e) => {
+        e.preventDefault();
+        const trimmed = cityInput.trim();
+        if (!trimmed) return;
+        fetchWeather({ city: trimmed });
+    };
+
     if (loading) return <WeatherSkeleton />;
+
+    // ── Geolocation denied/unavailable and no successful lookup yet ──
+    if (needsCityInput && !weather) {
+        return (
+            <CityInputForm
+                value={cityInput}
+                onChange={(e) => setCityInput(e.target.value)}
+                onSubmit={handleCitySubmit}
+                error={cityError}
+                submitting={citySubmitting}
+            />
+        );
+    }
 
     const iconCode  = weather?.weather?.[0]?.icon ?? '01d';
     const type      = getWeatherType(iconCode);

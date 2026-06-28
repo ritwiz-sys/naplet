@@ -55,14 +55,22 @@ app.post('/api/ask-ai', async (req, res) => {
 
 
 app.get('/api/weather', async (req, res) => {
-    const city = req.query.city || 'Amaravati';
+    const { lat, lon, city } = req.query;
     const units = req.query.units || 'metric';
 
     if (!process.env.WEATHER_API_KEY) {
         return res.status(500).json({ error: 'WEATHER_API_KEY is missing in server/.env' });
     }
 
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=${encodeURIComponent(units)}&appid=${process.env.WEATHER_API_KEY}`;
+    let url;
+    if (lat !== undefined && lon !== undefined) {
+        url = `https://api.openweathermap.org/data/2.5/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&units=${encodeURIComponent(units)}&appid=${process.env.WEATHER_API_KEY}`;
+    } else if (city) {
+        url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=${encodeURIComponent(units)}&appid=${process.env.WEATHER_API_KEY}`;
+    } else {
+        url = `https://api.openweathermap.org/data/2.5/weather?q=Amaravati&units=${encodeURIComponent(units)}&appid=${process.env.WEATHER_API_KEY}`;
+    }
+
     try {
         const weatherResponse = await fetch(url);
         const data = await weatherResponse.json();
